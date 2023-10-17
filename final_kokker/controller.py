@@ -23,9 +23,12 @@ class KokkerController:
             if confirm == "y":
                 # 베팅 확정시, 한 게임 라운드를 플레이
                 self.play_round(team_choice, bet_amount)
-            else:
+            elif confirm == "n":
                 # 베팅 취소시, 베팅 금액을 잔고에 반환
                 self.model.add_coin(bet_amount)
+
+        self.view.game_over(self.model.coin)
+
 
     def play_round(self, team_choice, bet_amount):
         # 한 게임 라운드를 진행하는 메서드
@@ -45,3 +48,4 @@ class KokkerController:
             return bet_amount * self.model.allo_team_B
         elif team_choice == "t":
             return bet_amount * self.model.allo_team_T
+

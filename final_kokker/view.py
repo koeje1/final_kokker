@@ -43,3 +43,8 @@ class KokkerView:
             print("무승부입니다. 배팅에 실패하셨습니다.")
         else:
             print(f"{winning_team}가 이겼습니다. 배팅에 실패하셨습니다.")
+
+    def game_over(self, coin):
+        if coin <= 0:
+            print("잔액이 부족합니다 충전 후 이용 바랍니다.")
+            exit()
