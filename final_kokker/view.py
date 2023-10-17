@@ -17,8 +17,11 @@ class KokkerView:
         while True:
             try:
                 # 플레이어에게 베팅할 코인 양을 입력받고 반환
-                bet_amount = int(input("배팅할 코인을 입력하세요 (한 번에 걸 수 있는 최대 코인 10000): "))
-                return bet_amount
+                bet_amount = int(input("배팅할 코인을 입력하세요 ( 최소코인 :10 ,최대 코인 :10000): "))
+                if 10 <= bet_amount <= 10000:
+                    return bet_amount
+                else:
+                    print("10 이상 10000 미만의 숫자를 입력해 주세요")
             except ValueError:
                 print("숫자를 입력해 주세요.")
 
