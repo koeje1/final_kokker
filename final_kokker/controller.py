@@ -1,51 +1,70 @@
 import random
-from model import KokkerModel
-from view import KokkerView
+import re
+from model import KoccerModel
+from view import KoccerView
+from user import KoccerUser
 
-class KokkerController:
-    def __init__(self, model, view):
-        self.model = model
-        self.view = view
+class KoccerController:
+    def __init__(self, model, view, user):
+        self._model = model
+        self._view = view
+        self._user = user
+        self.players = []
+        self.previous_game = None
 
-    def play_game(self):
-        # 게임 진행: 플레이어의 잔고가 0보다 큰 동안 게임을 진행
-        while self.model.coin > 0:
-            self.view.show_balance(self.model.coin)
-            team_choice = self.view.get_team_choice()
-            bet_amount = self.view.get_bet_amount()
+    def start(self):
+        self._view.show_welcome_message()
+        num_players = self._user.get_num_players()
+        for i in range(num_players):
+            player_name = self._user.get_user_name(i + 1)
+            self.players.append(player_name)
+            self._user.show_balance(player_name)
 
-            if not self.model.deduct_coin(bet_amount):
-                # 베팅 금액이 잔고를 초과하면 처음으로
-                print("돈이 부족합니다.")
+        while True:
+            current_player = self.players[self._user.current_players_index]
+            self._user.show_balance(current_player)
+
+            if self._user.player_balances[current_player] <= 0:
+                self._view.game_over(self._user.player_balances[current_player], current_player)
+                return
+
+            team_choice, bet_amount = self.get_player_bet_choice(current_player)
+            confirm = self._view.confirm_bet()
+
+            if confirm == "y":
+                if self._user.deduct_coin(bet_amount, current_player):
+                    self.play_round(team_choice, bet_amount, current_player)
+                    self._user.current_players_index = (self._user.current_players_index + 1) % len(self.players)
+            elif confirm == "n":
                 continue
 
-            confirm = self.view.confirm_bet()
-            if confirm == "y":
-                # 베팅 확정시, 한 게임 라운드를 플레이
-                self.play_round(team_choice, bet_amount)
-            elif confirm == "n":
-                # 베팅 취소시, 베팅 금액을 잔고에 반환
-                self.model.add_coin(bet_amount)
+    def get_player_bet_choice(self, current_player):
+        while True:
+            team_choice = self._view.get_team_choice(current_player)
+            bet_amount = self._view.get_bet_amount()
 
-        self.view.game_over(self.model.coin)
+            if self._user.deduct_coin(bet_amount, current_player):
+                return team_choice, bet_amount
+            else:
+                print("돈이 부족합니다. 다시 시도하세요.")
 
-
-    def play_round(self, team_choice, bet_amount):
-        # 한 게임 라운드를 진행하는 메서드
-        winning_team = random.choice(["a", "b", "t"])
-        if team_choice == winning_team:
+    def play_round(self, team_choice, bet_amount, current_player):
+        # todo : 임시로 팀을 a, b, t 로 정의함, 나중에 실제 데이터를 적용시킬 예정
+        choices_team = random.choice(["a", "b", "t"])
+        if team_choice == choices_team:
             winnings = self.calculate_winnings(team_choice, bet_amount)
-            self.model.add_coin(winnings)
-            self.view.show_result(winning_team, winnings)
-        else:
-            self.view.show_loss(winning_team)
+            self._user.player_balances[current_player] += winnings
+            self._view.show_result(choices_team, winnings)
+        elif team_choice != choices_team:
+            self._user.player_balances[current_player] -= bet_amount
+            self._view.show_loss(choices_team)
 
     def calculate_winnings(self, team_choice, bet_amount):
-        # 베팅 결과에 따른 수익을 계산하는 메서드
         if team_choice == "a":
-            return bet_amount * self.model.allo_team_A
+            return bet_amount * self._model.allo_team_A
         elif team_choice == "b":
-            return bet_amount * self.model.allo_team_B
+            return bet_amount * self._model.allo_team_B
         elif team_choice == "t":
-            return bet_amount * self.model.allo_team_T
-
+            return bet_amount * self._model.allo_team_T
+        else:
+            raise Exception("없는 팀입니다. 현재팀 구성을 다시한번 확인하세요")
